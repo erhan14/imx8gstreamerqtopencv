@@ -2,26 +2,27 @@
 #define SCALEDVIEW_H
 
 #include <QOpenGLWidget>
+#include "GLES2/gl2.h"
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
+#include <QGLWidget>
+#include <QImage>
 
 class ScaledView : public QOpenGLWidget
 {
     Q_OBJECT
 public:
     ScaledView(QWidget *parent = 0);
-    void resizeEvent(QResizeEvent * ev);
-    virtual void paintEvent(QPaintEvent *ev);
-    void mouseMoveEvent(QMouseEvent *ev) { cursorAction(ev); }
-    void mousePressEvent(QMouseEvent *ev) { cursorAction(ev, true); }
-    virtual void setPixmap(const QPixmap &pixmap);
-    virtual void setQImage(const QImage &img);
+    void setImage(const QImage& image);
+    void setPixmap(const QPixmap& image);
 
 protected:
-    virtual void cursorAction(QMouseEvent *ev, bool click = false);
+    void paintEvent(QPaintEvent*);
 
-    qreal scale;
-    QTransform scaler, scalerI;
-    const QPixmap *pixmap;
-    const QImage *qimg;
+private:
+    QImage img;
+    QPixmap pmap;
 };
 
 #endif // SCALEDVIEW_H

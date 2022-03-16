@@ -17,6 +17,9 @@ using namespace cv;
 #include <iostream>
 using namespace std;
 
+QElapsedTimer* MainWindow::tim = new QElapsedTimer();
+volatile int MainWindow::fps = 0;
+
 int main(int argc, char *argv[])
 {
 //    //    // The sink caps for the 'rtpjpegdepay' need to match the src caps of the 'rtpjpegpay' of the sender pipeline
@@ -70,10 +73,13 @@ int main(int argc, char *argv[])
 ////    return 0;
 
 
-
     QApplication a(argc, argv);
+    gst_init (&argc, &argv);
     MainWindow w;
-    w.show();
+    w.setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
+    //w.setWindowState(Qt::WindowFullScreen);
+    w.showFullScreen();
+    //w.show();
     return a.exec();
 }
 
