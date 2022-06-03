@@ -75,6 +75,11 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     gst_init (&argc, &argv);
+
+    /*QSurfaceFormat f = QSurfaceFormat::defaultFormat();
+    f.setRenderableType(QSurfaceFormat::OpenGLES);
+    QSurfaceFormat::setDefaultFormat(f);*/
+
     MainWindow w;
     w.setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
     //w.setWindowState(Qt::WindowFullScreen);

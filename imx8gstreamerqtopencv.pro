@@ -44,7 +44,7 @@ CONFIG += link_pkgconfig debug
 PKGCONFIG += gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0
 PKGCONFIG += gstreamer-base-1.0
 PKGCONFIG += opencv4
-PKGCONFIG += glesv2
+#PKGCONFIG += glesv2
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

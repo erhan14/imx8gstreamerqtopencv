@@ -42,7 +42,9 @@ public:
         GstElement *filter1;
         GstElement *source;
         GstElement *queue;
+        GstElement *queue2;
         GstElement *xraw;
+        GstElement *xraw2;
         GstElement *appsink;
     } CustomData;
 
@@ -66,14 +68,15 @@ private:
     //constexpr static const char *STREAM1="uridecodebin uri=rtsp://admin:adminFTX1@192.168.1.66:554/ch5/main/av_stream ! videoconvert ! queue ! appsink sync=false";
 
     //constexpr static const char *STREAM1="rtspsrc buffer-mode=0 do-retransmission=false latency=0 location=rtsp://192.168.1.250:8554/sample caps=\"application/x-rtp\" ! rtph264depay! h264parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
-    constexpr static const char *STREAM1="rtspsrc latency=0 location=rtsp://admin:Fotoniks2010@192.168.1.176:554/ch3/main/av_stream ! rtph265depay ! h265parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
+    //constexpr static const char *STREAM1="rtspsrc latency=0 location=rtsp://admin:Fotoniks2010@192.168.1.176:554/ch3/main/av_stream ! rtph265depay ! h265parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
+    constexpr static const char *STREAM1="rtspsrc latency=0 location=rtsp://admin:Fotoniks2010@192.168.1.64:554/ch1/main/av_stream ! rtph264depay ! h264parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
 
     //rtsp://admin:Fotoniks2010@192.168.1.176:554/ch3/main/av_stream
 #define IMX8_
 #ifdef IMX8_
     // rtsp://192.168.1.3:8554/sample
     constexpr static const char *STREAM2="rtspsrc buffer-mode=0 do-retransmission=false latency=0 location=rtsp://192.168.1.3:8554/sample caps=\"application/x-rtp\" ! rtph264depay! h264parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
-    // constexpr static const char *STREAM2="rtspsrc location=rtsp://admin:adminFTX1@192.168.1.66:554/ch5/main/av_stream caps=\"application/x-rctp, media=(string)video\" ! rtph265depay! h265parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
+    //constexpr static const char *STREAM2="rtspsrc location=rtsp://admin:Fotoniks2010@192.168.1.64:554/ch1/main/av_stream caps=\"application/x-rctp, media=(string)video\" ! rtph264depay! h264parse ! queue  ! vpudec ! videoconvert ! appsink sync=false";
 #else
     constexpr static const char *STREAM2="rtspsrc location=rtsp://admin:adminFTX1@192.168.1.66:554/ch5/main/av_stream caps=\"application/x-rtp, media=(string)video\" latency = 0 ! rtph265depay ! queue ! avdec_h265 ! videoconvert ! appsink sync=false";
 #endif

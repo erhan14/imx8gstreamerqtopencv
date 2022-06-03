@@ -6,6 +6,7 @@
 #include <QPixmap>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QThread>
 using namespace std;
 using namespace cv;
 
@@ -14,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
     //glWidget = new ScaledView(ui->centralwidget);
 
 //    th1 = std::async([&]{
@@ -43,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
      * Gstreamer version
      * */
     fps = -1;
-    QUrl url = QUrl::fromUserInput("rtsp://admin:Fotoniks2010@192.168.1.176:554/ch3/main/av_stream");
+    QUrl url = QUrl::fromUserInput("rtsp://admin:Fotoniks2010@192.168.1.64:554/ch1/main/av_stream");
     qmlplayer_init(url);
 
     th1 = std::async([&]{
@@ -56,7 +58,8 @@ MainWindow::MainWindow(QWidget *parent)
         qDebug("Cam1 link ok!\n");
     }
 
-    th = std::async(&MainWindow::videoCaptureThread,this);
+    th = std::async(std::launch::async, &MainWindow::videoCaptureThread,this);
+
 }
 
 MainWindow::~MainWindow()
@@ -77,7 +80,7 @@ GstCaps *new_pad_caps = NULL;
 GstStructure *new_pad_struct = NULL;
 const gchar *new_pad_type = NULL;
 
-g_print ("Received new pad '%s' from '%s':\n", GST_PAD_NAME (new_pad), GST_ELEMENT_NAME (src));
+g_print ("Received new pad '%s' from '%s':\n Linking with %s\n", GST_PAD_NAME (new_pad), GST_ELEMENT_NAME (src), GST_PAD_NAME (sink_pad));
 
 /* Check the new pad's name */
 if (!g_str_has_prefix (GST_PAD_NAME (new_pad), "recv_rtp_src_")) {
@@ -239,6 +242,13 @@ caps="application/x-rctp, media=(string)video"
 ! autovideosink sync=false
     *****************************************************************************/
     GstPad *pad;
+//    GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
+//         "format", G_TYPE_STRING, "BGRA",
+/*         "framerate", GST_TYPE_FRACTION, 25, 1,
+         "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+         "width", G_TYPE_INT, 320,
+         "height", G_TYPE_INT, 240, */
+//        NULL);
     //gst_debug_set_default_threshold(GST_LEVEL_DEBUG);
     data.pipeline = gst_pipeline_new(nullptr);
     qDebug("pipeline created\n");
@@ -250,22 +260,26 @@ caps="application/x-rctp, media=(string)video"
 
     data.rtppay = gst_element_factory_make( "rtph265depay", "depayl");
     qDebug("rtph265depay init\n");
-    data.parse = gst_element_factory_make("h265parse","parse");
-    qDebug("h265parse init\n");
+    //data.parse = gst_element_factory_make("h264parse","parse");
+    //qDebug("h265parse init\n");
     data.filter1 = gst_element_factory_make("capsfilter","filter");
     qDebug("capsfilter init\n");
     data.queue = gst_element_factory_make("queue", nullptr);
+    //data.queue2 = gst_element_factory_make("queue", nullptr);
     data.decode = gst_element_factory_make ("vpudec","decode");
     //data.decode = gst_element_factory_make ("h264dec", "decode");
     qDebug("vpudec init\n");
-    data.videoconvert = gst_element_factory_make("videoconvert", nullptr);
+    data.videoconvert = gst_element_factory_make("imxvideoconvert_g2d", "converter");
     qDebug("videoconvert init\n");
     //data.glupload = gst_element_factory_make("glupload", nullptr);
     //qDebug("glupload init\n");
     //data.qmlglsink = gst_element_factory_make("qmlglsink", "sink");
     //data.xraw = gst_element_factory_make("video/x-raw,format=RGB16", nullptr);
+    //data.xraw2 = gst_element_factory_make("video/x-raw,format=NV12", nullptr);
+
     data.appsink = gst_element_factory_make("appsink", "sink");
-    //g_object_set (G_OBJECT (data.appsink), "caps", "video/x-raw,format=RGB16", NULL);
+    //g_object_set (G_OBJECT(data.appsink), "caps", video_caps, NULL);
+    //gst_caps_unref (video_caps);
     qDebug("qmlglsink init\n");
 
     //g_object_set (G_OBJECT (data.qmlglsink), "sync", FALSE, NULL);
@@ -276,21 +290,24 @@ caps="application/x-rctp, media=(string)video"
 
     //application/x-rtp
     //GstCaps *filtercaps = gst_caps_from_string("application/x-rctp, media=(string)video");
-    GstCaps *filtercaps = gst_caps_from_string("application/x-rtp");
+    //GstCaps *filtercaps = gst_caps_from_string("application/x-rtp");
+    GstCaps *filtercaps = gst_caps_from_string("video/x-raw,format=RGBA");
     g_object_set (G_OBJECT (data.filter1), "caps", filtercaps, NULL);
-
     gst_caps_unref(filtercaps);
-    qDebug("caps init\n");
+    //data.audioconvert = gst_element_factory_make("videoconvert", NULL);
+    //qDebug("caps init\n");
 
-    gst_app_sink_set_drop(GST_APP_SINK(data.appsink), true);
-    gst_app_sink_set_max_buffers(GST_APP_SINK(data.appsink), 1);
+    //gst_app_sink_set_drop(GST_APP_SINK(data.appsink), true);
+    //gst_app_sink_set_max_buffers(GST_APP_SINK(data.appsink), 1);
 
+    // ! queue ! rtph264depay ! h264parse ! vpudec ! video/x-raw,format=NV12 ! imxvideoconvert_g2d ! video/x-raw,format=RGB16 ! queue ! waylandsink sync=false
     gst_bin_add_many (GST_BIN (data.pipeline), data.source
-            ,data.rtppay, data.parse, data.filter1, data.queue, data.decode,
-             data.videoconvert, /*data.glupload, data.qmlglsink data.xraw,*/ data.appsink
+            , data.rtppay,/* data.parse, data.filter1, data.queue,*/ data.decode
+            ,/*data.xraw2,*/ data.videoconvert, /* data.glupload, data.qmlglsink*/ /*data.xraw,*//* data.queue2,*/ data.filter1, /*data.audioconvert,*/ data.appsink
             ,NULL);
 
-    if (!gst_element_link_many(data.rtppay, data.parse, data.queue, data.decode, data.videoconvert, /*data.glupload, data.qmlglsink data.xraw,*/ data.appsink, NULL)) {
+    if (!gst_element_link_many(data.rtppay, /*data.parse, data.queue,*/ data.decode, /*data.xraw2, */ data.videoconvert, /*data.glupload, data.qmlglsink */ /*data.xraw,*/
+                               data.filter1, /*data.audioconvert, */ data.appsink, NULL)) {
             g_printerr("video elements could not be linked.\n");
             gst_object_unref(data.pipeline);
             return -1;
@@ -343,6 +360,9 @@ void MainWindow::loopForDiscreteVideo(cv::VideoCapture *cap)
         GstSample *sample = gst_app_sink_pull_sample(GST_APP_SINK(data.appsink));
           if (sample == NULL) {
             qDebug("%s: Failed to get new sample", __FUNCTION__);
+            if(gst_app_sink_is_eos (GST_APP_SINK(data.appsink))) {
+                qDebug("%s: Appsink in EOS", __FUNCTION__);
+            }
             return;
           }
 
@@ -359,28 +379,34 @@ void MainWindow::loopForDiscreteVideo(cv::VideoCapture *cap)
           if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
 
               /*GstVideoInfo * info = gst_video_info_new();
-              gst_video_info_from_caps(info, caps);
+              gst_video_info_from_caps(info, caps);                                             
               if(once==0)
                 qDebug("Image %d x %d %d",info->width, info->height, info->finfo->format);
               once = 1;*/
 
 
               // yuv to bgr
-              cv::Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
+              /*cv::Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
               cv::Mat frame(height, width, CV_8UC3);
               cvtColor(mYUV, frame, CV_YUV2BGR_I420, 3);
-
+*/
               //qDebug("type %s", type2str(frame.type()).c_str());
-//             cv::Mat frame(cv::Size(width, height), CV_8UC3, (char *)map.data, cv::Mat::AUTO_STEP);
+             cv::Mat frame(cv::Size(width, height), CV_8UC4, (char *)map.data, cv::Mat::AUTO_STEP); //4 kanal alpha ile RGBA
+             //cv::Mat frame(cv::Size(width, height), CV_16UC3, (char *)map.data, cv::Mat::AUTO_STEP); //RGB16
+             //cv::Mat frame(cv::Size(width, height), CV_8UC3, (char *)map.data, cv::Mat::AUTO_STEP);
 
-              QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_BGR888);
+              //QImage::Format_BGR888
+              QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGBA8888); //rgba icin
+              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB16);
 //              dest.bits();
-              ui->glWidget->setPixmap(QPixmap::fromImage(dest));
 
+              ui->glWidget->setImage(dest);
+              //ui->glWidget->setData(frame);
+              //ui->glWidget->setPixmap(QPixmap::fromImage(dest));
 
               //ui->videoLabel->raise();
               //ui->videoLabel->setPixmap(QPixmap::fromImage(dest));
-                gst_buffer_unmap(buffer, &map);
+              gst_buffer_unmap(buffer, &map);
           } else {
             qWarning("Error with gst_buffer_map");
           }
