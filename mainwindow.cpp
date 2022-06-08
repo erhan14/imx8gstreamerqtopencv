@@ -396,12 +396,12 @@ void MainWindow::loopForDiscreteVideo(cv::VideoCapture *cap)
              //cv::Mat frame(cv::Size(width, height), CV_8UC3, (char *)map.data, cv::Mat::AUTO_STEP);
 
               //QImage::Format_BGR888
-              QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGBA8888); //rgba icin
+              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGBA8888); //rgba icin
               //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB16);
 //              dest.bits();
 
-              ui->glWidget->setImage(dest);
-              //ui->glWidget->setData(frame);
+              //ui->glWidget->setImage(dest);
+              ui->glWidget->setData(frame);
               //ui->glWidget->setPixmap(QPixmap::fromImage(dest));
 
               //ui->videoLabel->raise();

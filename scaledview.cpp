@@ -13,12 +13,12 @@ m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfil
 
 void ScaledView::setImage(const QImage& image)
 {
-    qDebug("m1\n");
+    //qDebug("m1\n");
     //mutex.lockForWrite();
-    img = image;
+    img = QGLWidget::convertToGLFormat(image);
     //queue.enqueue(image);
     //mutex.unlock();
-    qDebug("m2\n");
+    //qDebug("m2\n");
     prepared = true;
     update();
 }
@@ -32,9 +32,15 @@ void ScaledView::setPixmap(const QPixmap& image)
 
 void ScaledView::setData(const cv::Mat& image)
 {
-    data = image;
-    prepared = true;
-    update();
+    //qDebug("m1\n");
+    if(!processing) {
+        data = image.clone();
+        //cv::cvtColor(data, data, cv::COLOR_RGBA2BGR);
+        cv::flip(data, data, 0);
+        prepared = true;
+        //qDebug("m2\n");
+        update();
+    }
 }
 
 ScaledView::~ScaledView() {
@@ -101,7 +107,7 @@ void ScaledView::initializeGL()
     //glEnable(GL_TEXTURE_2D);
     glClearColor(0.85, 0.85, 0.85, 1.0);
     //glClearColor(0.3,0,0,1);
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
 
     if(!program.addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource))
         exit(0);
@@ -136,15 +142,23 @@ void ScaledView::initializeGL()
     program.bind();
     check(12);
 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindTexture(GL_TEXTURE_2D, id_y);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
 }
 
 void ScaledView::paintGL()
 {
-    //qDebug("2\n");
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    check(1);
-    //glEnable(GL_TEXTURE_2D);
-    //check(2);
+    if(initialCall) {
+        //qDebug("2\n");
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        check(1);
+        //glEnable(GL_TEXTURE_2D);
+        //check(2);
+
 
     //glActiveTexture(GL_TEXTURE0);
     //check(14);
@@ -158,23 +172,33 @@ void ScaledView::paintGL()
     check(7);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
     check(8);
+    }
 
-        if(prepared) {
+        if(prepared /*&& !queue.isEmpty()*/) {
             //qDebug("4 %d %d\n", data.cols, data.rows);
-            qDebug("m3\n");
+            //qDebug("m3\n");
             //mutex.lockForWrite();
-            QImage tex = QGLWidget::convertToGLFormat(img);
+            //QImage tex = QGLWidget::convertToGLFormat(img);
+            //QImage f = queue.dequeue();
+            //QImage tex = QGLWidget::convertToGLFormat(f);
             //mutex.unlock();
-            qDebug("m4\n");
+
             //qDebug("4 %d %d\n", tex.width(), tex.height());
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width(), tex.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.bits());
+            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
+
             //cv::flip(data, data, 0);
-            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.cols, data.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data);
+            //qDebug("m4\n");
+            processing = true;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.cols, data.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.ptr());
+            processing=false;
+            //qDebug("m5\n");
             check(13);
 
             glDrawArrays(GL_TRIANGLES, 0, vertices.size());
             //glDrawElements(GL_TRIANGLES, 1, GL_UNSIGNED_SHORT, 0);
             check(15);
+            //qDebug("m4\n");
+            initialCall = false;
         }
 
         //glActiveTexture ( GL_TEXTURE0 );

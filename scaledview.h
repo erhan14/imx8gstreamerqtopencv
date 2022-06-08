@@ -83,7 +83,8 @@ private:
     int						brightnessUniId;				/** Fragment shader uniform id of brightness vector. */
     int						deinterlaceUniId;				/** Fragment shader uniform id of de-interlace values. */
 
-
+    bool initialCall = true;
+    volatile bool processing = false;
     bool m_core;
     int m_xRot = 0;
     int m_yRot = 0;
