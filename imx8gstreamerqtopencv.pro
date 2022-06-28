@@ -8,12 +8,14 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     scaledview.cpp \
-    setplaying.cpp
+    setplaying.cpp \
+    processingthread.cpp
 
 HEADERS += \
     mainwindow.h \
     scaledview.h \
-    setplaying.h
+    setplaying.h \
+    processingthread.h
 
 FORMS += \
     mainwindow.ui
@@ -50,4 +52,8 @@ PKGCONFIG += opencv4
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /home/root/
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES +=
+
+RESOURCES +=
 

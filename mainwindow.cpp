@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QThread>
+
 using namespace std;
 using namespace cv;
 
@@ -46,6 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
      * */
     fps = -1;
     QUrl url = QUrl::fromUserInput("rtsp://admin:Fotoniks2010@192.168.1.64:554/ch1/main/av_stream");
+    //QUrl url = QUrl::fromUserInput("rtsp://admin:q1234321@192.168.5.104:554/ch2/main/av_stream");
     qmlplayer_init(url);
 
     th1 = std::async([&]{
@@ -60,6 +62,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     th = std::async(std::launch::async, &MainWindow::videoCaptureThread,this);
 
+    //QObject::connect(this,SIGNAL(incoming(QImage)),ui->glWidget,SLOT(setImage(QImage)));
+    //qRegisterMetaType< cv::Mat >("cv::Mat");
+    //QObject::connect(this,SIGNAL(incomingMat(cv::Mat)),ui->glWidget,SLOT(setData(cv::Mat)), Qt::DirectConnection); //Qt::QueuedConnection Qt::DirectConnection
+    //qRegisterMetaType< GstSample >("GstSample");
+    //QObject::connect(this,SIGNAL(incomingGst(GstSample)),ui->glWidget,SLOT(setGst(GstSample)), Qt::QueuedConnection); //Qt::QueuedConnection Qt::DirectConnection
+
+    processingThread = new ProcessingThread(ui->glWidget);
+    processingThread->start();
 }
 
 MainWindow::~MainWindow()
@@ -346,6 +356,10 @@ static string type2str(int type) {
   return r;
 }
 
+void MainWindow::emitSignals(const cv::Mat& frame) {
+    emit incomingMat(frame.clone());
+}
+
 void MainWindow::loopForDiscreteVideo(cv::VideoCapture *cap)
 {
     qDebug("loopForDiscreteVideo");
@@ -365,52 +379,60 @@ void MainWindow::loopForDiscreteVideo(cv::VideoCapture *cap)
             }
             return;
           }
+          processingThread->queue.enqueue(sample);
+          //emit incomingGst(sample);
 
-          // FIXME: zero copy?
-          /*GstCaps *caps = gst_sample_get_caps(sample);
-          GstStructure *structure = gst_caps_get_structure(caps, 0);
-          const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
-          const int height = g_value_get_int(gst_structure_get_value(structure, "height"));*/
-          const int width = 1920;
-          const int height = 1080;
-          GstBuffer *buffer = gst_sample_get_buffer(sample);
-          GstMapInfo map;
+//          /*GstCaps *caps = gst_sample_get_caps(sample);
+//          GstStructure *structure = gst_caps_get_structure(caps, 0);
+//          const int width = g_value_get_int(gst_structure_get_value(structure, "width"));
+//          const int height = g_value_get_int(gst_structure_get_value(structure, "height"));*/
+//          const int width = 1920;
+//          const int height = 1080;
+//          GstBuffer *buffer = gst_sample_get_buffer(sample);
+//          GstMapInfo map;
 
-          if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+//          if (gst_buffer_map(buffer, &map, GST_MAP_READ)) {
 
-              /*GstVideoInfo * info = gst_video_info_new();
-              gst_video_info_from_caps(info, caps);                                             
-              if(once==0)
-                qDebug("Image %d x %d %d",info->width, info->height, info->finfo->format);
-              once = 1;*/
+//              /*GstVideoInfo * info = gst_video_info_new();
+//              gst_video_info_from_caps(info, caps);
+//              if(once==0)
+//                qDebug("Image %d x %d %d",info->width, info->height, info->finfo->format);
+//              once = 1;*/
 
 
-              // yuv to bgr
-              /*cv::Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
-              cv::Mat frame(height, width, CV_8UC3);
-              cvtColor(mYUV, frame, CV_YUV2BGR_I420, 3);
-*/
-              //qDebug("type %s", type2str(frame.type()).c_str());
-             cv::Mat frame(cv::Size(width, height), CV_8UC4, (char *)map.data, cv::Mat::AUTO_STEP); //4 kanal alpha ile RGBA
-             //cv::Mat frame(cv::Size(width, height), CV_16UC3, (char *)map.data, cv::Mat::AUTO_STEP); //RGB16
-             //cv::Mat frame(cv::Size(width, height), CV_8UC3, (char *)map.data, cv::Mat::AUTO_STEP);
+//              // yuv to bgr
+//              /*cv::Mat mYUV(height + height/2, width, CV_8UC1, (void*) map.data);
+//              cv::Mat frame(height, width, CV_8UC3);
+//              cvtColor(mYUV, frame, CV_YUV2BGR_I420, 3);
+//*/
+//              //qDebug("type %s", type2str(frame.type()).c_str());
+//             cv::Mat frame(cv::Size(width, height), CV_8UC4, (char *)map.data, cv::Mat::AUTO_STEP); //4 kanal alpha ile RGBA
+//             //cv::Mat frame(cv::Size(width, height), CV_16UC3, (char *)map.data, cv::Mat::AUTO_STEP); //RGB16
+//             //cv::Mat frame(cv::Size(width, height), CV_8UC3, (char *)map.data, cv::Mat::AUTO_STEP);
 
-              //QImage::Format_BGR888
-              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGBA8888); //rgba icin
-              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB16);
-//              dest.bits();
+//              //QImage::Format_BGR888
+//              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGBA8888); //rgba icin
+//              //imageProvider->img = dest.copy(); //QPixmap::fromImage(img);
+//              //emit incoming(imageProvider->img);
 
-              //ui->glWidget->setImage(dest);
-              ui->glWidget->setData(frame);
-              //ui->glWidget->setPixmap(QPixmap::fromImage(dest));
+//             //std::async(std::launch::async, &MainWindow::emitSignals,this,std::ref(frame));
+//             // emit incomingMat(frame.clone());
 
-              //ui->videoLabel->raise();
-              //ui->videoLabel->setPixmap(QPixmap::fromImage(dest));
-              gst_buffer_unmap(buffer, &map);
-          } else {
-            qWarning("Error with gst_buffer_map");
-          }
-          gst_sample_unref(sample);
+
+//              //QImage dest(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB16);
+////              dest.bits();
+
+//              //ui->glWidget->setImage(dest);
+//              //ui->glWidget->setData(frame);
+//              //ui->glWidget->setPixmap(QPixmap::fromImage(dest));
+
+//              //ui->videoLabel->raise();
+//              //ui->videoLabel->setPixmap(QPixmap::fromImage(dest));
+//              gst_buffer_unmap(buffer, &map);
+//          } else {
+//            qWarning("Error with gst_buffer_map");
+//          }
+//          gst_sample_unref(sample);
           fps++;
           if(t->hasExpired(1000)) {
               qDebug("FPS: %d\n", fps);

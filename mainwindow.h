@@ -14,6 +14,7 @@
 #include <QUrl>
 #include "setplaying.h"
 #include <QElapsedTimer>
+#include "processingthread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -53,9 +54,12 @@ public:
     gint64 duration;
     static QElapsedTimer *tim;
     static volatile int fps;
-
+    ProcessingThread * processingThread;
 private slots:
 
+signals:
+    void incoming(QImage image);
+    void incomingMat(const cv::Mat& image);
 
 private:
     std::future<void> th;
@@ -100,6 +104,7 @@ private:
 
     void eventForCameraChoose(Cameras);
     void loopForDiscreteVideo(cv::VideoCapture *);
+    void emitSignals(const cv::Mat&);
     void videoCaptureThread();//   gst-launch-1.0 v4l2src device=/dev/video0 ! videoscale ! videoconvert ! x264enc bitrate=1024 speed-preset=superfast qp-min=30 tune=zerolatency  ! mpegtsmux ! rndbuffersize min=188 max=188 ! udpsink host=127.0.0.1 port=5001
     cv::VideoCapture cam1{};//=cv::VideoCapture("gst-launch-1.0 uridecodebin uri=udp://127.0.0.1:5001 ! videoconvert ! appsink sync=false",cv::CAP_GSTREAMER);
     cv::VideoCapture cam2{};//=cv::VideoCapture("gst-launch-1.0 uridecodebin uri=udp://127.0.0.1:5002 ! videoconvert ! appsink sync=false",cv::CAP_GSTREAMER);

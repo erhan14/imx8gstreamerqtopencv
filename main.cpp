@@ -82,9 +82,13 @@ int main(int argc, char *argv[])
 
     MainWindow w;
     w.setWindowFlags(Qt::CustomizeWindowHint | Qt::FramelessWindowHint);
-    //w.setWindowState(Qt::WindowFullScreen);
     w.showFullScreen();
-    //w.show();
+
+//    QQmlApplicationEngine engine;
+//    engine.rootContext()->setContextProperty("source",&source);
+//    engine.addImageProvider("pool",source.imageProvider);
+//    engine.load(QUrl("qrc:/qgstvideo.qml"));
+
     return a.exec();
 }
 

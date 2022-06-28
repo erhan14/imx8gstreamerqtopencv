@@ -18,6 +18,7 @@
 #include <QOpenGLBuffer>
 #include <QReadWriteLock>
 #include <QQueue>
+#include <gst/gst.h>
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
@@ -27,14 +28,18 @@ class ScaledView : public QOpenGLWidget, public QOpenGLFunctions
     Q_OBJECT
 public:
     ScaledView(QWidget *parent = 0);
-    void setImage(const QImage& image);
+    //void setImage(const QImage& image);
     void setPixmap(const QPixmap& image);
-    void setData(const cv::Mat& image);
+    //void setData(const cv::Mat& image);
     ~ScaledView();
 
     unsigned int			frames;				/** Total amount of rendered frames. */
         unsigned int			painted;			/** Amount of calls to painGL() method. Increases every second, or if contrast/brightness changes or if new image is received. */
 
+
+public slots:
+    void setImage(const QImage& image);
+    void setData(const cv::Mat& image);
 protected:
     //void paintEvent(QPaintEvent*);
     /** OpenGL initialization. */

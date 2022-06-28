@@ -13,7 +13,7 @@ m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfil
 
 void ScaledView::setImage(const QImage& image)
 {
-    //qDebug("m1\n");
+    qDebug("m1 %dx%d\n", image.width(), image.height());
     //mutex.lockForWrite();
     img = QGLWidget::convertToGLFormat(image);
     //queue.enqueue(image);
@@ -190,6 +190,7 @@ void ScaledView::paintGL()
             //qDebug("m4\n");
             processing = true;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.cols, data.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.ptr());
+            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
             processing=false;
             //qDebug("m5\n");
             check(13);
